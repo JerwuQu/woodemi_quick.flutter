@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:flutter/foundation.dart';
-import 'package:libusb/libusb64.dart';
+import 'package:libusb/libusb.dart';
 import 'package:quick_usb/src/common.dart';
 
 import 'quick_usb_platform_interface.dart';
@@ -15,7 +15,7 @@ late Libusb _libusb;
 class QuickUsbWindows extends _QuickUsbDesktop {
   // For example/.dart_tool/flutter_build/generated_main.dart
   static registerWith() {
-    QuickUsbPlatform.instance = QuickUsbMacos();
+    QuickUsbPlatform.instance = QuickUsbWindows();
     _libusb = Libusb(DynamicLibrary.open('libusb-1.0.23.dll'));
   }
 }
@@ -32,7 +32,8 @@ class QuickUsbLinux extends _QuickUsbDesktop {
   // For example/.dart_tool/flutter_build/generated_main.dart
   static registerWith() {
     QuickUsbPlatform.instance = QuickUsbLinux();
-    _libusb = Libusb(DynamicLibrary.open('${File(Platform.resolvedExecutable).parent.path}/lib/libusb-1.0.23.so'));
+    _libusb = Libusb(DynamicLibrary.open(
+        '${File(Platform.resolvedExecutable).parent.path}/lib/libusb-1.0.23.so'));
   }
 }
 
@@ -89,7 +90,8 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
   }
 
   @override
-  Future<List<UsbDeviceDescription>> getDevicesWithDescription({bool requestPermission = true}) async {
+  Future<List<UsbDeviceDescription>> getDevicesWithDescription(
+      {bool requestPermission = true}) async {
     var devices = await getDeviceList();
     var result = <UsbDeviceDescription>[];
     for (var device in devices) {
@@ -99,7 +101,8 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
   }
 
   @override
-  Future<UsbDeviceDescription> getDeviceDescription(UsbDevice usbDevice, {bool requestPermission = true}) async {
+  Future<UsbDeviceDescription> getDeviceDescription(UsbDevice usbDevice,
+      {bool requestPermission = true}) async {
     String? manufacturer;
     String? product;
     String? serialNumber;
@@ -203,7 +206,7 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
         id: configDescPtr.ref.bConfigurationValue,
         index: configDescPtr.ref.iConfiguration,
         interfaces: _iterateInterface(
-                configDescPtr.ref.interface_1, configDescPtr.ref.bNumInterfaces)
+                configDescPtr.ref.interface1, configDescPtr.ref.bNumInterfaces)
             .toList(),
       );
       _libusb.libusb_free_config_descriptor(configDescPtr);
@@ -291,9 +294,9 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
       var result = _libusb.libusb_bulk_transfer(
         _devHandle!,
         endpoint.endpointAddress,
-        dataPtr,
+        dataPtr.cast<UnsignedChar>(),
         maxLength,
-        actualLengthPtr,
+        actualLengthPtr.cast<Int>(),
         timeout,
       );
 
@@ -321,9 +324,9 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
       var result = _libusb.libusb_bulk_transfer(
         _devHandle!,
         endpoint.endpointAddress,
-        dataPtr,
+        dataPtr.cast<UnsignedChar>(),
         data.length,
-        actualLengthPtr,
+        actualLengthPtr.cast<Int>(),
         timemout,
       );
 
